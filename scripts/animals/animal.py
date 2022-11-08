@@ -1,22 +1,9 @@
-import math
 import pygame as py
-from enum import Enum
-import random
+import random, math
 
-from food import Food, Foods
-
-class Direction(Enum):
-    """Enum use to handle the direction of the animal
-    """
-    LEFT = (-1, 0)
-    RIGHT = (1, 0)
-    UP = (0, -1)
-    DOWN = (0, 1)
-    UP_LEFT = (-1, -1)
-    UP_RIGHT = (1, -1)
-    DOWN_LEFT = (-1, 1)
-    DOWN_RIGHT = (1, 1)
-
+from .food_handler import AnimalFoodHandler
+from foods import Foods, Food
+from .direction import Direction
 
 class Animal:
     def __init__(self, 
@@ -47,7 +34,8 @@ class Animal:
         
         self.direction = self.choose_direction()
         self.direction_count = 0
-        self.hunger = 200
+        
+        self.food_handler = AnimalFoodHandler()
         
         self.vision_scale = 6
         self.vision = py.Rect(self.rect.centerx, self.rect.centery, self.size * self.vision_scale, self.size * self.vision_scale)
@@ -90,17 +78,16 @@ class Animal:
             else:
                 self.stop_moving = True
                 if self.is_colliding_with_food(self.targeted_food):
-                    self.eat(self.targeted_food)
+                    self.food_handler.eat_food(self.targeted_food)
                 self.move_to_food(self.targeted_food)
                 
-        print(self.hunger, self.life)
+        
         if not self.stop_moving:
             self.move()
             
-        self.increase_hunger(1)
-        if self.hunger <= 0:
-            self.hunger = 0
-            self.remove_life_from_starvation(1)
+        self.food_handler.decrease_hunger(1)
+        self.life = self.food_handler.remove_life_from_starvation(self.life, 1)
+        print(self.food_handler.food_storage, self.life)
         
             
     def update_vision(self) -> None:
@@ -139,36 +126,6 @@ class Animal:
             bool: Whether the animal is dead or not
         """
         return self.life <= 0
-    
-    def is_starving(self) -> bool:
-        """Check if the animal is starving (hunger <= 0)
-
-        Returns:
-            bool: Whether the animal is starving or not
-        """
-        return self.hunger <= 0
-    
-    def increase_hunger(self, amount : int) -> None:
-        """Increase the hunger of the animal, so the variable will be decreased
-
-        Args:
-            amount (int): The amount to increase the hunger
-        """
-        self.hunger -= amount
-        
-    def decrease_hunger(self, amount : int) -> None:
-        """Decrease the hunger of the animal, so the variable will be increased
-
-        Args:
-            amount (int): The amount to decrease the hunger
-        """
-        self.hunger += amount
-        
-    def remove_life_from_starvation(self, amount : int) -> None:
-        """Remove life from the animal when he is starving, so it check if the animal is starving before removing life
-        """
-        if self.is_starving():
-            self.life -= amount
         
     def create(self, screen : py.surface.Surface) -> None:
         """Create the animal on the screen and his vision
@@ -229,15 +186,6 @@ class Animal:
             bool: Whether the animal is colliding with the food or not
         """
         return self.rect.colliderect(food.rect)
-                
-    def eat(self, food : Food) -> None:
-        """Eat a food
-
-        Args:
-            food (Food): The food to eat, (remove it from the screen)
-        """
-        self.decrease_hunger(20)
-        food.remove_life(2)
         
     def draw_food_line(self, screen : py.surface.Surface, food : Food) -> None:
         """Method to draw a line from the animal to the food
@@ -257,7 +205,11 @@ class Animal:
         
         dx, dy = food.rect.centerx - self.rect.centerx, food.rect.centery - self.rect.centery
         dist = math.hypot(dx, dy)
-        dx, dy = dx / dist, dy / dist
+        try:
+            dx, dy = dx / dist, dy / dist
+        except ZeroDivisionError:
+            dx = dy = 0
+            
         if round(dx * self.speed) >= 1:
             self.rect.x += round(dx * self.speed)
         else:
@@ -299,45 +251,3 @@ class Animal:
                 closest_distance = distance
         return closest_food # type: ignore
         
-        
-class Animals:
-    def __init__(self, animals : list[Animal] = []) -> None:
-        """Class used to manage all animals
-
-        Args:
-            animals (list[Animal], optional): In case there is already a list of animals somewhere in the game. Defaults to [].
-        """
-        self.animals = animals
-        
-    def add_animal(self, animal : Animal) -> None:
-        """Add an animal to the list of animals
-
-        Args:
-            animal (Animal): The animal to add
-        """     
-        self.animals.append(animal)
-        
-    def remove_animal(self, animal : Animal) -> None:
-        """Remove an animal from the list of animals
-
-        Args:
-            animal (Animal): The animal to remove
-        """
-        self.animals.remove(animal)
-        
-    def update(self, screen : py.surface.Surface, foods : Foods) -> None:
-        """Main update method for all animals
-
-        Args:
-            screen (py.surface.Surface): The game screen
-            foods (list[Food]): List of all foods in the game
-        """
-        for animal in self.animals:
-            animal.update(screen, foods)
-            if animal.is_dead():
-                self.remove_animal(animal)
-        
-        
-if __name__ == '__main__':
-    print(list(Direction))
-    print(random.choice(list(Direction)).value)
