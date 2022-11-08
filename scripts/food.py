@@ -1,8 +1,9 @@
+import random
 import pygame as py
 
 
 class Food:
-    def __init__(self, size: int, color: tuple[int, int, int], x: int, y: int, life: int = 100) -> None:
+    def __init__(self, size: int, color: tuple[int, int, int], x: int, y: int, life: int = 10) -> None:
         """Class used to create foods
 
         Args:
@@ -51,6 +52,7 @@ class Foods:
         """
         self.foods = []
         
+        
     def add_food(self, food : Food) -> None:
         """Add a food to the list of foods
 
@@ -58,6 +60,17 @@ class Foods:
             food (Food): The food to add
         """
         self.foods.append(food)
+        
+    def add_foods(self, screen : py.surface.Surface, amount : int, size : int, color : tuple[int, int, int]) -> None:
+        """Add foods to the list of foods
+
+        Args:
+            amount (int): The amount of foods to add
+            size (int): The size of the foods
+            color (tuple[int, int, int]): The color of the foods
+        """
+        for _ in range(amount):
+            self.foods.append(Food(size, color, random.randint(0, screen.get_width() - 50), random.randint(0, screen.get_height() - 50)))
         
     def remove_food(self, food : Food) -> None:
         """Remove a food from the list of foods
@@ -76,5 +89,5 @@ class Foods:
         for food in self.foods:
             food.create(screen)
             
-            if food.is_completely_eaten():
-                self.remove_food(food)
+            # if food.is_completely_eaten():
+            #     self.remove_food(food)

@@ -3,7 +3,7 @@ import pygame as py
 from enum import Enum
 import random
 
-from food import Food
+from food import Food, Foods
 
 class Direction(Enum):
     """Enum use to handle the direction of the animal
@@ -52,12 +52,20 @@ class Animal:
         self.vision_scale = 6
         self.vision = py.Rect(self.rect.centerx, self.rect.centery, self.size * self.vision_scale, self.size * self.vision_scale)
         
-        self.foods : list[Food] = []
+        self.food_in_vision : list[Food] = []
+        self.targeted_food : Food | None = None
+        
+        self.stop_moving = False
         
     def __str__(self) -> str:
         return f"Animal: x={self.x}, y={self.y}, size={self.size}, color={self.color}, speed={self.speed}, life={self.life}"
+    
+    def handle_input(self) -> None:
+        key = py.key.get_pressed()
+        if key[py.K_SPACE]:
+            self.stop_moving = not self.stop_moving
         
-    def update(self, screen : py.surface.Surface, foods : list[Food]) -> None:
+    def update(self, screen : py.surface.Surface, foods : Foods) -> None:
         """Method used to update the animal
 
         Args:
@@ -66,10 +74,34 @@ class Animal:
         """
         self.create(screen)
         self.check_screen_collision(screen)
+        self.handle_input()
         
         self.update_vision()
-        self.check_foods_in_vision(foods, screen)
-        self.move()
+        self.food_in_vision = self.check_foods_in_vision(foods.foods, screen)
+        
+        if len(self.food_in_vision) > 0:
+            if self.targeted_food is None:
+                self.targeted_food = self.get_closest_food(self.food_in_vision)
+            if self.targeted_food.is_completely_eaten():
+                foods.remove_food(self.targeted_food)
+                self.targeted_food = None
+                self.stop_moving = False
+                
+            else:
+                self.stop_moving = True
+                if self.is_colliding_with_food(self.targeted_food):
+                    self.eat(self.targeted_food)
+                self.move_to_food(self.targeted_food)
+                
+        print(self.hunger, self.life)
+        if not self.stop_moving:
+            self.move()
+            
+        self.increase_hunger(1)
+        if self.hunger <= 0:
+            self.hunger = 0
+            self.remove_life_from_starvation(1)
+        
             
     def update_vision(self) -> None:
         """Update the animal vision based on his rect
@@ -168,18 +200,24 @@ class Animal:
         Returns:
             bool: Whether the food is in the vision or not
         """
-        return self.vision.colliderect(food.rect)
+        return self.vision.collidepoint(food.rect.centerx, food.rect.centery)
     
-    def check_foods_in_vision(self, foods : list[Food], screen : py.surface.Surface) -> None:
+    def check_foods_in_vision(self, foods : list[Food], screen : py.surface.Surface) -> list[Food]:
         """Check for all foods in the screen if they are any in the animal vision
 
         Args:
             foods (list[Food]): The list of foods to check
             screen (py.surface.Surface): _description_
+            
+        Returns:
+            list[Food]: The list of foods in the vision
         """
+        food_in_vision : list[Food] = []
         for food in foods:
             if self.is_food_in_vision(food):
                 self.draw_food_line(screen, food)
+                food_in_vision.append(food)
+        return food_in_vision
                 
     def is_colliding_with_food(self, food : Food) -> bool:
         """Check if the animal is colliding with a food
@@ -216,11 +254,50 @@ class Animal:
         Args:
             food (Food): The food to move to
         """
+        
         dx, dy = food.rect.centerx - self.rect.centerx, food.rect.centery - self.rect.centery
         dist = math.hypot(dx, dy)
         dx, dy = dx / dist, dy / dist
-        self.rect.x += dx * self.speed
-        self.rect.y += dy * self.speed
+        if round(dx * self.speed) >= 1:
+            self.rect.x += round(dx * self.speed)
+        else:
+            self.rect.x -= 1
+            
+        if round(dy * self.speed) >= 1:
+            self.rect.y += round(dy * self.speed)
+        else:
+            self.rect.y -= 1
+        # self.rect.x += dx * self.speed
+        # self.rect.y += dy * self.speed
+        
+    def get_distance_from_food(self, food : Food) -> float:
+        """Get the distance from the animal to the food
+
+        Args:
+            food (Food): The food to get the distance from
+
+        Returns:
+            float: The distance from the animal to the food
+        """
+        return math.hypot(food.rect.centerx - self.rect.centerx, food.rect.centery - self.rect.centery)
+    
+    def get_closest_food(self, foods : list[Food]) -> Food:
+        """Get the closest food from the animal
+
+        Args:
+            foods (list[Food]): The list of foods to check
+
+        Returns:
+            Food: The closest food from the animal
+        """
+        closest_food = None
+        closest_distance : float = 0
+        for food in foods:
+            distance = self.get_distance_from_food(food)
+            if closest_food is None or distance < closest_distance:
+                closest_food = food
+                closest_distance = distance
+        return closest_food # type: ignore
         
         
 class Animals:
@@ -248,7 +325,7 @@ class Animals:
         """
         self.animals.remove(animal)
         
-    def update(self, screen : py.surface.Surface, foods : list[Food]) -> None:
+    def update(self, screen : py.surface.Surface, foods : Foods) -> None:
         """Main update method for all animals
 
         Args:

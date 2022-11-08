@@ -41,8 +41,7 @@ class Game:
         self.animals.add_animal(Animal(50, (255, 0, 0), 100, 100))
         
         self.foods = Foods()
-        for _ in range(25):
-            self.foods.add_food(Food(10, (0, 0, 255), random.randint(0, self.screen.screen_witdh - 50), random.randint(0, self.screen.screen_height - 50)))
+        self.foods.add_foods(self.screen.screen, 500, 10, (0, 0, 255))
         
     def is_quitting(self, event : py.event.Event) -> bool:
         """Check if the user is quitting the game
@@ -59,10 +58,10 @@ class Game:
         """The main game loop.
         """
         while self.running:
-            self.clock.tick(60)
+            self.clock.tick(120)
             self.screen.change_background_color((0, 180, 0))
             
-            self.animals.update(self.screen.screen, self.foods.foods)
+            self.animals.update(self.screen.screen, self.foods)
             self.foods.update(self.screen.screen)
             
             py.display.flip()
