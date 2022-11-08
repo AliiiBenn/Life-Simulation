@@ -41,7 +41,7 @@ class Game:
         self.animals.add_animal(Animal(50, (255, 0, 0), 100, 100))
         
         self.foods = Foods()
-        self.foods.add_foods(self.screen.screen, 500, 10, (0, 0, 255))
+        self.foods.add_foods(self.screen.screen, 25, 10, (0, 0, 255))
         
     def is_quitting(self, event : py.event.Event) -> bool:
         """Check if the user is quitting the game

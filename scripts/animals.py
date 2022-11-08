@@ -236,8 +236,8 @@ class Animal:
         Args:
             food (Food): The food to eat, (remove it from the screen)
         """
-        self.decrease_hunger(10)
-        food.remove_life(10)
+        self.decrease_hunger(20)
+        food.remove_life(2)
         
     def draw_food_line(self, screen : py.surface.Surface, food : Food) -> None:
         """Method to draw a line from the animal to the food

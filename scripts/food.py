@@ -3,7 +3,7 @@ import pygame as py
 
 
 class Food:
-    def __init__(self, size: int, color: tuple[int, int, int], x: int, y: int, life: int = 10) -> None:
+    def __init__(self, size: int, color: tuple[int, int, int], x: int, y: int, life: int = 30) -> None:
         """Class used to create foods
 
         Args:
@@ -27,6 +27,7 @@ class Food:
         Args:
             screen (py.surface.Surface): The screen where the food will be drawn
         """
+        self.rect = py.Rect(self.x, self.y, self.size * (self.life / 10), self.size * (self.life / 10))
         py.draw.rect(screen, self.color, self.rect, border_radius=90)
         
     def remove_life(self, amount : int) -> None:
