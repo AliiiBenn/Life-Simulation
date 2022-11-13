@@ -3,7 +3,9 @@ import random, math
 
 from .food_handler import AnimalFoodHandler
 from foods import Foods, Food
+from water import Water
 from .direction import Direction
+from .vision import Vision
 
 class Animal:
     def __init__(self, 
@@ -36,13 +38,10 @@ class Animal:
         self.direction_count = 0
         
         self.food_handler = AnimalFoodHandler()
-        
         self.vision_scale = 6
-        self.vision = py.Rect(self.rect.centerx, self.rect.centery, self.size * self.vision_scale, self.size * self.vision_scale)
+        self.vision = Vision(self.rect.centerx, self.rect.centery, self.size * self.vision_scale, self.size * self.vision_scale)
         
-        self.food_in_vision : list[Food] = []
-        self.targeted_food : Food | None = None
-        
+        self.targeted_food = None
         self.stop_moving = False
         
     def __str__(self) -> str:
@@ -60,41 +59,62 @@ class Animal:
             screen (py.surface.Surface): The game screen
             foods (list[Food]): All the foods in the game
         """
+        
         self.create(screen)
+        self.vision.update(screen)
         self.check_screen_collision(screen)
         self.handle_input()
         
-        self.update_vision()
-        self.food_in_vision = self.check_foods_in_vision(foods.foods, screen)
+        self.vision.update_rect(self.rect)
+        self.food_in_vision = self.vision.check_visible_foods(foods.foods)
         
-        if len(self.food_in_vision) > 0:
-            if self.targeted_food is None:
-                self.targeted_food = self.get_closest_food(self.food_in_vision)
-            if self.targeted_food.is_completely_eaten():
-                foods.remove_food(self.targeted_food)
-                self.targeted_food = None
-                self.stop_moving = False
+        # if len(self.food_in_vision) > 0:
+        #     if self.targeted_food is None:
+        #         self.targeted_food = self.get_closest_food(self.food_in_vision)
+        #     if self.targeted_food.is_completely_eaten():
+        #         foods.remove_food(self.targeted_food)
+        #         self.targeted_food = None
+        #         self.stop_moving = False
                 
-            else:
+        #     else:
+        #         self.stop_moving = True
+        #         if self.is_colliding_with_food(self.targeted_food):
+        #             self.food_handler.eat_food(self.targeted_food)
+        #         self.move_to_food(self.targeted_food)
+        
+        # (f"{self.targeted_food=} - {self.targeted_food.quantity if self.targeted_food is not None else 0} - {self.food_handler.food_storage=}")
+        
+        print(self.food_handler.food_storage)
+        if self.targeted_food is not None and self.targeted_food.is_completely_eaten():
+            self.remove_eaten_targeted_food(foods)
+            
+        if self.targeted_food is not None:
+            if self.food_handler.is_hungry():
                 self.stop_moving = True
                 if self.is_colliding_with_food(self.targeted_food):
                     self.food_handler.eat_food(self.targeted_food)
                 self.move_to_food(self.targeted_food)
-                
+            else:
+                self.stop_moving = False
+                self.targeted_food = None
+            
+        if len(self.food_in_vision) > 0:
+            if self.targeted_food is None and self.food_handler.is_hungry():
+                self.targeted_food = self.get_closest_food(self.food_in_vision)
+        
         
         if not self.stop_moving:
             self.move()
             
-        self.food_handler.decrease_hunger(1)
+        self.food_handler.food_removing_timer()
         self.life = self.food_handler.remove_life_from_starvation(self.life, 1)
-        print(self.food_handler.food_storage, self.life)
         
-            
-    def update_vision(self) -> None:
-        """Update the animal vision based on his rect
-        """
-        self.vision.x = self.rect.centerx - self.vision.width // 2
-        self.vision.y = self.rect.centery - self.vision.height // 2
+    def remove_eaten_targeted_food(self, foods : Foods) -> None:
+        (f"targerted food is completely eaten: {self.targeted_food}")
+        if self.targeted_food in foods.foods:
+            foods.remove_food(self.targeted_food)
+        self.targeted_food = None
+        self.stop_moving = False
         
     def check_screen_collision(self, screen : py.surface.Surface) -> None:
         """Check if the animal is colliding with the screen borders
@@ -134,7 +154,6 @@ class Animal:
             screen (py.surface.Surface): The screen to create the animal
         """
         py.draw.rect(screen, self.color, self.rect)
-        py.draw.rect(screen, (255, 0, 0), self.vision, 1)
         
     def move(self):
         """Move the animal based on his direction, every 100 frames the animal will choose a new direction
@@ -147,35 +166,7 @@ class Animal:
             
         self.rect.x += self.direction[0] * self.speed
         self.rect.y += self.direction[1] * self.speed
-        
-    def is_food_in_vision(self, food : Food) -> bool:
-        """Check if there is a food in the animal vision
-
-        Args:
-            food (Food): The food to check
-
-        Returns:
-            bool: Whether the food is in the vision or not
-        """
-        return self.vision.collidepoint(food.rect.centerx, food.rect.centery)
-    
-    def check_foods_in_vision(self, foods : list[Food], screen : py.surface.Surface) -> list[Food]:
-        """Check for all foods in the screen if they are any in the animal vision
-
-        Args:
-            foods (list[Food]): The list of foods to check
-            screen (py.surface.Surface): _description_
-            
-        Returns:
-            list[Food]: The list of foods in the vision
-        """
-        food_in_vision : list[Food] = []
-        for food in foods:
-            if self.is_food_in_vision(food):
-                self.draw_food_line(screen, food)
-                food_in_vision.append(food)
-        return food_in_vision
-                
+           
     def is_colliding_with_food(self, food : Food) -> bool:
         """Check if the animal is colliding with a food
 
@@ -186,15 +177,6 @@ class Animal:
             bool: Whether the animal is colliding with the food or not
         """
         return self.rect.colliderect(food.rect)
-        
-    def draw_food_line(self, screen : py.surface.Surface, food : Food) -> None:
-        """Method to draw a line from the animal to the food
-
-        Args:
-            screen (py.surface.Surface): The screen to draw the line
-            food (Food): The food to draw the line to
-        """
-        py.draw.line(screen, (0, 255, 0), self.rect.center, food.rect.center)
         
     def move_to_food(self, food : Food):
         """Method to move the animal to the food based on the hypotenuse

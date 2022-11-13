@@ -9,7 +9,7 @@ class Foods:
     def __init__(self) -> None:
         """Class used to handle the foods
         """
-        self.foods = []
+        self.foods : list[Food] = []
         
         
     def add_food(self, food : Food) -> None:
@@ -37,6 +37,7 @@ class Foods:
         Args:
             food (Food): The food to remove
         """
+        (f"{food=}, {food in self.foods}")
         self.foods.remove(food)
         
     def update(self, screen : py.surface.Surface) -> None:

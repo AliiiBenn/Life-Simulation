@@ -3,8 +3,13 @@ import pygame as py
 
 from animals import Animals, Animal
 from foods import Foods
+from water import Water
 
 from foods.food_placer import FoodPlacer
+
+FOOD_COLOR = (7, 97, 34)
+BACKGROUND_COLOR = (13, 181, 63)
+
 
 class Screen:
     """Class use to handle the game screen
@@ -45,7 +50,8 @@ class Game:
             self.animals.add_animal(Animal(30, (255, 0, 0), random.randint(0, self.screen.screen_witdh - 50), random.randint(0, self.screen.screen_height - 50)))
         
         self.foods = Foods()
-        # self.foods.add_foods(self.screen.screen, 25, 6, (0, 0, 255))
+        self.foods.add_foods(self.screen.screen, 25, 6, FOOD_COLOR)
+        self.water = Water(100, 100, 100, 100)
         
     def is_quitting(self, event : py.event.Event) -> bool:
         """Check if the user is quitting the game
@@ -63,9 +69,9 @@ class Game:
         """
         while self.running:
             self.clock.tick(60)
-            self.screen.change_background_color((0, 180, 0))
+            self.screen.change_background_color(BACKGROUND_COLOR)
             
-            
+            self.water.update(self.screen.screen)
             
             self.animals.update(self.screen.screen, self.foods)
             self.foods.update(self.screen.screen)
@@ -74,6 +80,6 @@ class Game:
             
             for event in py.event.get():
                 self.running = not self.is_quitting(event)
-                FoodPlacer.is_left_click(event, self.foods, 1, 6, (0, 0, 255))
+                FoodPlacer.is_left_click(event, self.foods, 1, 6, FOOD_COLOR)
         py.quit()
          
