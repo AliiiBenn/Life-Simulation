@@ -44,13 +44,11 @@ class Animal:
         self.targeted_food = None
         self.stop_moving = False
         
+        self.age = 0
+        self.death_age = random.randint(50, 100)
+        
     def __str__(self) -> str:
         return f"Animal: x={self.x}, y={self.y}, size={self.size}, color={self.color}, speed={self.speed}, life={self.life}"
-    
-    def handle_input(self) -> None:
-        key = py.key.get_pressed()
-        if key[py.K_SPACE]:
-            self.stop_moving = not self.stop_moving
         
     def update(self, screen : py.surface.Surface, foods : Foods) -> None:
         """Method used to update the animal
@@ -63,26 +61,9 @@ class Animal:
         self.create(screen)
         self.vision.update(screen)
         self.check_screen_collision(screen)
-        self.handle_input()
         
         self.vision.update_rect(self.rect)
         self.food_in_vision = self.vision.check_visible_foods(foods.foods)
-        
-        # if len(self.food_in_vision) > 0:
-        #     if self.targeted_food is None:
-        #         self.targeted_food = self.get_closest_food(self.food_in_vision)
-        #     if self.targeted_food.is_completely_eaten():
-        #         foods.remove_food(self.targeted_food)
-        #         self.targeted_food = None
-        #         self.stop_moving = False
-                
-        #     else:
-        #         self.stop_moving = True
-        #         if self.is_colliding_with_food(self.targeted_food):
-        #             self.food_handler.eat_food(self.targeted_food)
-        #         self.move_to_food(self.targeted_food)
-        
-        # (f"{self.targeted_food=} - {self.targeted_food.quantity if self.targeted_food is not None else 0} - {self.food_handler.food_storage=}")
         
         print(self.food_handler.food_storage)
         if self.targeted_food is not None and self.targeted_food.is_completely_eaten():

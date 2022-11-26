@@ -45,12 +45,18 @@ class Game:
         self.running = True
         
         self.animals = Animals()
-        # self.animals.add_animal(Animal(20, (255, 0, 0), 100, 100))
-        for _ in range(1):
-            self.animals.add_animal(Animal(30, (255, 0, 0), random.randint(0, self.screen.screen_witdh - 50), random.randint(0, self.screen.screen_height - 50)))
+        
+        for _ in range(3):
+            size = random.randint(15, 30)
+            color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+            speed = random.randint(1, 3)
+            life = random.randint(100, 200)
+            x = random.randint(0, self.screen.screen_witdh - size)
+            y = random.randint(0, self.screen.screen_height - size)
+            self.animals.add_animal(Animal(size, color, x, y, speed, life))
         
         self.foods = Foods()
-        self.foods.add_foods(self.screen.screen, 25, 6, FOOD_COLOR)
+        self.foods.add_foods(self.screen.screen, 30, 6, FOOD_COLOR)
         self.water = Water(100, 100, 100, 100)
         
     def is_quitting(self, event : py.event.Event) -> bool:

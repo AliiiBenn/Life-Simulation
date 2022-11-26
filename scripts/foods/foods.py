@@ -37,8 +37,8 @@ class Foods:
         Args:
             food (Food): The food to remove
         """
-        (f"{food=}, {food in self.foods}")
-        self.foods.remove(food)
+        if food in self.foods:
+            self.foods.remove(food)
         
     def update(self, screen : py.surface.Surface) -> None:
         """The main update function of the foods
